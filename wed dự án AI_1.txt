@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Nhóm 1 - Ultimate Arena</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Orbitron', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            500: '#ef4444', // Red
+                            600: '#dc2626',
+                            900: '#450a0a',
+                        },
+                        dark: {
+                            800: '#18181b', // Zinc 900
+                            900: '#09090b', // Zinc 950
+                        }
+                    },
+                    boxShadow: {
+                        'neon': '0 0 15px rgba(239, 68, 68, 0.5)',
+                        'neon-hover': '0 0 25px rgba(239, 68, 68, 0.8)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Background Pattern */
+        body {
+            background-color: #09090b;
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(239, 68, 68, 0.15) 0px, transparent 50%),
+                radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.1) 0px, transparent 50%);
+            background-attachment: fixed;
+        }
+
+        /* Glassmorphism */
+        .glass {
+            background: rgba(24, 24, 27, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-card {
+            background: rgba(39, 39, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #09090b; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3f3f46; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ef4444; 
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .game-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .game-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 20px 40px -5px rgba(0, 0, 0, 0.5), 0 0 15px rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+        
+        .play-overlay {
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 100%);
+        }
+    </style>
+</head>
+<body class="text-gray-100 font-sans antialiased min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- Navbar -->
+    <nav class="glass sticky top-0 z-50 transition-all duration-300">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <!-- Logo -->
+            <div class="flex items-center space-x-3 group cursor-pointer" onclick="filterGames('all')">
+                <div class="relative">
+                    <i class="fas fa-gamepad text-4xl text-brand-500 group-hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.8)] transition-all duration-300"></i>
+                    <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-3 w-3 bg-brand-600"></span>
+                    </span>
+                </div>
+                <div class="flex flex-col">
+                    <span class="text-2xl font-display font-bold tracking-wider text-white leading-none">
+                        NHÓM<span class="text-brand-500">1</span>
+                    </span>
+                    <span class="text-[10px] text-yellow-500 font-sans font-bold tracking-[0.2em] uppercase mt-1" style="text-shadow: 0 0 8px rgba(234, 179, 8, 0.5);">
+                        KING GAME
+                    </span>
+                </div>
+            </div>
+
+            <!-- Desktop Menu -->
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#" onclick="filterGames('all')" class="relative text-sm font-display font-bold tracking-widest text-gray-400 hover:text-brand-500 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] group">
+                    TẤT CẢ
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all duration-300 group-hover:w-full"></span>
+                </a>
+                <a href="#" onclick="filterGames('Hành động')" class="relative text-sm font-display font-bold tracking-widest text-gray-400 hover:text-brand-500 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] group">
+                    HÀNH ĐỘNG
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all duration-300 group-hover:w-full"></span>
+                </a>
+                <a href="#" onclick="filterGames('Đua xe')" class="relative text-sm font-display font-bold tracking-widest text-gray-400 hover:text-brand-500 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] group">
+                    ĐUA XE
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all duration-300 group-hover:w-full"></span>
+                </a>
+                <a href="#" onclick="filterGames('Trí tuệ')" class="relative text-sm font-display font-bold tracking-widest text-gray-400 hover:text-brand-500 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] group">
+                    TRÍ TUỆ
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all duration-300 group-hover:w-full"></span>
+                </a>
+                <a href="#" onclick="filterGames('Thể thao')" class="relative text-sm font-display font-bold tracking-widest text-gray-400 hover:text-brand-500 transition-all duration-300 hover:drop-shadow-[0_0_8px_rgba(239,68,68,0.6)] group">
+                    THỂ THAO
+                    <span class="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-500 transition-all duration-300 group-hover:w-full"></span>
+                </a>
+            </div>
+
+            <!-- Right Actions: Add Game & Search -->
+            <div class="hidden sm:flex items-center gap-4">
+                <!-- Add Game Button -->
+                <button onclick="openAddGameModal()" class="flex items-center gap-2 bg-gradient-to-r from-brand-600 to-brand-500 hover:from-brand-500 hover:to-orange-500 text-white text-sm font-bold px-5 py-2.5 rounded-full shadow-neon transition-all hover:scale-105 active:scale-95">
+                    <i class="fas fa-plus-circle"></i> <span>ĐĂNG GAME</span>
+                </button>
+                
+                <!-- Search -->
+                <div class="relative group">
+                    <input type="text" id="searchInput" placeholder="Tìm game..." class="bg-dark-800 border border-gray-700 text-sm rounded-full pl-10 pr-4 py-2.5 focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 w-40 transition-all duration-300 focus:w-64 placeholder-gray-500 text-gray-200">
+                    <i class="fas fa-search absolute left-3.5 top-3 text-gray-500 group-focus-within:text-brand-500 transition-colors"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 relative">
+        
+        <!-- Hero Section -->
+        <div class="relative rounded-3xl overflow-hidden mb-12 shadow-2xl border border-gray-800 group">
+            <!-- Background Image with Overlay -->
+            <div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542751371-adc38448a05e?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-40 transition-transform duration-1000 group-hover:scale-105"></div>
+            <div class="absolute inset-0 bg-gradient-to-r from-dark-900 via-dark-900/90 to-transparent"></div>
+            
+            <div class="relative p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center justify-between z-10">
+                <div class="mb-8 md:mb-0 md:w-2/3 lg:w-1/2">
+                    <span class="inline-block py-1 px-3 rounded bg-brand-500/20 text-brand-500 text-xs font-bold tracking-widest mb-4 border border-brand-500/30">GAME OF THE YEAR EDITION</span>
+                    <h1 class="text-4xl md:text-6xl font-display font-bold mb-6 leading-tight text-white drop-shadow-lg">
+                        ĐẾ CHẾ GAME <br><span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-500 to-orange-500">NHÓM 1</span>
+                    </h1>
+                    <p class="text-gray-300 mb-8 text-lg leading-relaxed max-w-xl">
+                        Trải nghiệm kho game đỉnh cao được tuyển chọn kỹ lưỡng. Không cài đặt. Không quảng cáo. Chỉ có đam mê.
+                    </p>
+                    <div class="flex gap-4">
+                        <button onclick="scrollToGames()" class="bg-brand-600 hover:bg-brand-500 text-white px-8 py-3.5 rounded-full font-bold transition-all transform hover:scale-105 shadow-neon flex items-center gap-2">
+                            <i class="fas fa-play"></i> CHƠI NGAY
+                        </button>
+                        <button onclick="toggleChat()" class="glass-card hover:bg-white/10 text-white px-8 py-3.5 rounded-full font-semibold transition-all border border-gray-600 hover:border-gray-400">
+                            HỖ TRỢ
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 3D Illustration/Icon -->
+                <div class="md:w-1/3 flex justify-center animate-float">
+                    <div class="relative group">
+                        <!-- Glow Effect Behind -->
+                        <div class="absolute inset-0 bg-red-600 blur-[100px] opacity-40 rounded-full group-hover:opacity-60 transition-opacity duration-500"></div>
+                        
+                        <!-- Dragon Icon -->
+                        <i class="fas fa-dragon text-[10rem] md:text-[14rem] text-brand-500 drop-shadow-[0_0_30px_rgba(239,68,68,0.6)] relative z-10 transform -rotate-12 transition-all duration-500 group-hover:scale-110 group-hover:drop-shadow-[0_0_50px_rgba(239,68,68,0.9)]"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter & Stats Bar -->
+        <div class="flex flex-col sm:flex-row justify-between items-end sm:items-center mb-8 gap-4 pb-4 border-b border-gray-800">
+            <div>
+                <h2 class="text-3xl font-display font-bold text-white mb-2" id="listTitle">Tất cả trò chơi</h2>
+                <div class="flex items-center gap-2 text-gray-400 text-sm">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                    <span>Đang hoạt động: <span id="gameCount" class="text-white font-bold">0</span> game</span>
+                </div>
+            </div>
+            
+            <div class="flex gap-2">
+                <button onclick="filterGames('all')" class="px-4 py-2 rounded-lg bg-dark-800 hover:bg-gray-700 text-gray-300 text-sm transition font-medium border border-gray-700">Mới nhất</button>
+                <button class="px-4 py-2 rounded-lg bg-dark-800 hover:bg-gray-700 text-gray-300 text-sm transition font-medium border border-gray-700">Phổ biến</button>
+            </div>
+        </div>
+
+        <!-- Game Grid -->
+        <div id="gameGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+            <!-- Games will be injected here via JS -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden flex flex-col items-center justify-center py-20 text-center">
+            <div class="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mb-6">
+                <i class="fas fa-search text-4xl text-gray-600"></i>
+            </div>
+            <h3 class="text-xl font-bold text-white mb-2">Không tìm thấy game nào</h3>
+            <p class="text-gray-500">Thử tìm từ khóa khác xem sao?</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark-900 border-t border-gray-800 mt-12">
+        <div class="container mx-auto px-4 py-12">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-6 md:mb-0 text-center md:text-left">
+                    <div class="text-2xl font-display font-bold text-white mb-2">NHÓM<span class="text-brand-500">1</span></div>
+                    <p class="text-gray-500 text-sm">Nền tảng giải trí học đường đỉnh cao.</p>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-brand-500 hover:text-white transition-all transform hover:-translate-y-1">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-brand-500 hover:text-white transition-all transform hover:-translate-y-1">
+                        <i class="fab fa-discord"></i>
+                    </a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:bg-brand-500 hover:text-white transition-all transform hover:-translate-y-1">
+                        <i class="fab fa-github"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-600 text-sm">
+                &copy; 2024 Nhóm 1. All rights reserved. Design by AI.
+            </div>
+        </div>
+    </footer>
+
+    <!-- ADD GAME MODAL (NEW) -->
+    <div id="addGameModal" class="fixed inset-0 z-[70] hidden transition-opacity duration-300 opacity-0">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="closeAddGameModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div class="bg-dark-900 border border-gray-700 rounded-2xl w-full max-w-md p-6 shadow-2xl transform transition-all scale-95" id="addGameContent">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-display font-bold text-white">ĐĂNG GAME MỚI</h3>
+                    <button onclick="closeAddGameModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+                </div>
+                
+                <form id="addGameForm" onsubmit="handleAddGame(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Tên Game</label>
+                        <input type="text" id="newGameTitle" required class="w-full bg-dark-800 border border-gray-700 rounded-lg p-3 text-white focus:border-brand-500 focus:outline-none" placeholder="Ví dụ: Siêu Chiến Binh">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Thể loại</label>
+                        <select id="newGameCategory" class="w-full bg-dark-800 border border-gray-700 rounded-lg p-3 text-white focus:border-brand-500 focus:outline-none">
+                            <option value="Hành động">Hành động</option>
+                            <option value="Đua xe">Đua xe</option>
+                            <option value="Trí tuệ">Trí tuệ</option>
+                            <option value="Thể thao">Thể thao</option>
+                            <option value="Vui nhộn">Vui nhộn</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Link Ảnh Bìa (URL)</label>
+                        <input type="url" id="newGameImage" required class="w-full bg-dark-800 border border-gray-700 rounded-lg p-3 text-white focus:border-brand-500 focus:outline-none" placeholder="https://...">
+                        <p class="text-[10px] text-gray-500 mt-1">Mẹo: Copy link ảnh từ Google Images</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Link Game (URL)</label>
+                        <input type="url" id="newGameUrl" required class="w-full bg-dark-800 border border-gray-700 rounded-lg p-3 text-white focus:border-brand-500 focus:outline-none" placeholder="https://...">
+                        <p class="text-[10px] text-gray-500 mt-1">Link file .html hoặc link embed (iframe)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Mô tả ngắn</label>
+                        <textarea id="newGameDesc" rows="2" class="w-full bg-dark-800 border border-gray-700 rounded-lg p-3 text-white focus:border-brand-500 focus:outline-none" placeholder="Game này chơi như thế nào..."></textarea>
+                    </div>
+
+                    <div class="pt-2 flex gap-3">
+                        <button type="button" onclick="closeAddGameModal()" class="flex-1 py-3 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold transition">Hủy</button>
+                        <button type="submit" class="flex-1 py-3 rounded-lg bg-brand-600 hover:bg-brand-500 text-white font-bold transition shadow-neon">ĐĂNG GAME</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Modal (Immersive Mode) -->
+    <div id="gameModal" class="fixed inset-0 z-[60] hidden transition-opacity duration-300 opacity-0" aria-hidden="true">
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-black/95 backdrop-blur-sm" onclick="closeGame()"></div>
+        
+        <!-- Modal Content -->
+        <div class="absolute inset-0 flex flex-col animate-[slideUp_0.3s_ease-out]">
+            <!-- Header -->
+            <div class="h-16 flex items-center justify-between px-6 bg-dark-900 border-b border-gray-800 z-10">
+                <div class="flex items-center gap-4">
+                    <button onclick="closeGame()" class="group flex items-center justify-center w-10 h-10 rounded-full bg-gray-800 hover:bg-red-500/20 text-gray-400 hover:text-red-500 transition-all">
+                        <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                    </button>
+                    <div>
+                        <h3 id="modalTitle" class="text-lg font-bold text-white font-display tracking-wide">Tên Game</h3>
+                        <div class="flex items-center gap-2 text-xs text-gray-400">
+                            <span id="modalCategory" class="text-brand-500 font-bold">Thể loại</span>
+                            <span>•</span>
+                            <span>Đang chơi</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-3">
+                    <button class="w-10 h-10 rounded-lg bg-gray-800 text-gray-400 hover:text-white hover:bg-gray-700 transition flex items-center justify-center" title="Phóng to">
+                        <i class="fas fa-expand"></i>
+                    </button>
+                    <button class="w-10 h-10 rounded-lg bg-gray-800 text-gray-400 hover:text-red-500 hover:bg-red-500/10 transition flex items-center justify-center" title="Báo cáo lỗi">
+                        <i class="fas fa-flag"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Iframe Container -->
+            <div class="flex-grow bg-black relative overflow-hidden flex items-center justify-center">
+                <iframe id="gameFrame" src="" class="w-full h-full border-0" allowfullscreen></iframe>
+                
+                <!-- Loading Animation -->
+                <div id="gameLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-dark-900 z-20">
+                    <div class="relative w-20 h-20 mb-4">
+                        <div class="absolute top-0 w-full h-full rounded-full border-4 border-gray-800"></div>
+                        <div class="absolute top-0 w-full h-full rounded-full border-4 border-brand-500 border-t-transparent animate-spin"></div>
+                    </div>
+                    <p class="text-brand-500 font-display tracking-widest animate-pulse">LOADING SYSTEM...</p>
+                </div>
+            </div>
+
+            <!-- Footer info -->
+            <div class="bg-dark-900 border-t border-gray-800 px-6 py-4">
+                <div class="container mx-auto max-w-5xl flex justify-between items-start">
+                    <div class="max-w-2xl">
+                        <h4 class="text-gray-300 font-bold text-sm mb-1">Hướng dẫn</h4>
+                        <p id="modalDesc" class="text-gray-500 text-sm leading-relaxed">Mô tả game...</p>
+                    </div>
+                    <div class="flex gap-3">
+                        <button class="flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-500 text-white text-sm font-bold transition shadow-lg shadow-red-900/20">
+                            <i class="fas fa-heart"></i> <span class="hidden sm:inline">Yêu thích</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chatbot Widget -->
+    <div class="fixed bottom-6 right-6 z-40 flex flex-col items-end pointer-events-none">
+        <!-- Chat Window -->
+        <div id="chatWindow" class="pointer-events-auto hidden transform transition-all duration-300 origin-bottom-right mb-4 w-[350px] bg-dark-900 border border-gray-700 rounded-2xl shadow-2xl overflow-hidden flex flex-col h-[500px]">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-brand-900 to-dark-800 p-4 flex justify-between items-center border-b border-gray-700">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-orange-600 flex items-center justify-center shadow-lg">
+                            <i class="fas fa-robot text-white text-lg"></i>
+                        </div>
+                        <div class="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-dark-900 rounded-full"></div>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white font-display text-sm">Trợ lý Nhóm 1</h3>
+                        <span class="text-xs text-brand-400">Online | AI Powered</span>
+                    </div>
+                </div>
+                <button onclick="toggleChat()" class="w-8 h-8 rounded-full hover:bg-white/10 flex items-center justify-center text-gray-400 transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Messages Area -->
+            <div id="chatMessages" class="flex-grow p-4 overflow-y-auto space-y-4 bg-dark-800/50 scroll-smooth">
+                <!-- Bot Welcome Message -->
+                <div class="flex justify-start items-end gap-2">
+                    <div class="w-6 h-6 rounded-full bg-brand-600 flex-shrink-0 flex items-center justify-center text-[10px]"><i class="fas fa-robot"></i></div>
+                    <div class="bg-dark-800 border border-gray-700 text-gray-200 rounded-2xl rounded-bl-none py-2.5 px-4 max-w-[85%] text-sm shadow-sm">
+                        Chào anh em! Cần tìm game gì để chiến hôm nay? 🎮 <br>Thử gõ: <span class="text-brand-500 font-bold cursor-pointer hover:underline" onclick="setSearch('đua xe')">"đua xe"</span>, <span class="text-brand-500 font-bold cursor-pointer hover:underline" onclick="setSearch('bắn súng')">"bắn súng"</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="p-4 bg-dark-900 border-t border-gray-800">
+                <div class="flex gap-2 relative">
+                    <input type="text" id="chatInput" placeholder="Nhập tin nhắn..." class="w-full bg-dark-800 text-gray-200 text-sm rounded-xl pl-4 pr-12 py-3 focus:outline-none focus:ring-1 focus:ring-brand-500 border border-gray-700 placeholder-gray-500 transition-all">
+                    <button onclick="sendMessage()" class="absolute right-2 top-1.5 bottom-1.5 w-10 bg-brand-600 hover:bg-brand-500 text-white rounded-lg transition-colors flex items-center justify-center shadow-lg">
+                        <i class="fas fa-paper-plane text-xs"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toggle Button -->
+        <button onclick="toggleChat()" class="pointer-events-auto group bg-brand-600 hover:bg-brand-500 text-white w-14 h-14 rounded-full shadow-[0_0_20px_rgba(220,38,38,0.5)] flex items-center justify-center transition-all transform hover:scale-110 relative overflow-hidden">
+            <div class="absolute inset-0 bg-white/20 group-hover:animate-ping opacity-0 group-hover:opacity-100 rounded-full duration-1000"></div>
+            <i class="fas fa-comment-dots text-2xl relative z-10"></i>
+            <span class="absolute top-0 right-0 flex h-4 w-4">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 border-2 border-dark-900"></span>
+            </span>
+        </button>
+    </div>
+
+    <script>
+        // --- DỮ LIỆU GAME GỐC (DEFAULT) ---
+        const defaultGames = [
+            // --- HÀNH ĐỘNG (ACTION) ---
+            {
+                id: 1,
+                title: "Space War 2077",
+                category: "Hành động",
+                image: "https://image.pollinations.ai/prompt/spaceship%20battle%20game%20pixel%20art%20dark%20space?width=400&height=300&nologo=true",
+                url: "https://itch.io/embed-upload/469046?color=333333", 
+                description: "Chiến đấu chống lại hạm đội ngoài hành tinh.",
+                keywords: ["bắn súng", "không gian", "space", "chiến đấu"]
+            },
+            {
+                id: 2,
+                title: "Zombie Hunter",
+                category: "Hành động",
+                image: "https://image.pollinations.ai/prompt/zombie%20shooter%20game%20horror%20survival?width=400&height=300&nologo=true",
+                url: "",
+                description: "Sinh tồn trong thành phố bị nhiễm virus Zombie.",
+                keywords: ["zombie", "kinh dị", "bắn súng", "sinh tồn"]
+            },
+            {
+                id: 3,
+                title: "Pixel Ninja",
+                category: "Hành động",
+                image: "https://image.pollinations.ai/prompt/pixel%20art%20ninja%20platformer%20game%20night%20city?width=400&height=300&nologo=true",
+                url: "",
+                description: "Đột nhập vào căn cứ địch và hoàn thành nhiệm vụ bí mật.",
+                keywords: ["ninja", "nhảy", "chiến đấu", "pixel"]
+            },
+            {
+                id: 4,
+                title: "Metal Slugger",
+                category: "Hành động",
+                image: "https://image.pollinations.ai/prompt/military%20run%20and%20gun%20game%20cartoon%20style%20explosion?width=400&height=300&nologo=true",
+                url: "",
+                description: "Game bắn súng phong cách rambo lùn kinh điển.",
+                keywords: ["bắn súng", "quân đội", "rambo", "chiến tranh"]
+            },
+            {
+                id: 5,
+                title: "Galaxy Invaders",
+                category: "Hành động",
+                image: "https://image.pollinations.ai/prompt/vertical%20space%20shooter%20arcade%20game%20colorful?width=400&height=300&nologo=true",
+                url: "",
+                description: "Bắn ruồi không gian phong cách cổ điển.",
+                keywords: ["bắn ruồi", "máy bay", "không gian", "arcade"]
+            },
+
+            // --- ĐUA XE (RACING) ---
+            {
+                id: 6,
+                title: "Speed Racer X",
+                category: "Đua xe",
+                image: "https://image.pollinations.ai/prompt/neon%20racing%20car%20game%20cyberpunk%20city?width=400&height=300&nologo=true",
+                url: "", 
+                description: "Đua xe tốc độ cao trong thành phố Cyberpunk.",
+                keywords: ["đua xe", "tốc độ", "xe hơi", "car"]
+            },
+            {
+                id: 7,
+                title: "Midnight Drift",
+                category: "Đua xe",
+                image: "https://image.pollinations.ai/prompt/drift%20car%20racing%20game%20night%20street%20smoke?width=400&height=300&nologo=true",
+                url: "",
+                description: "Thể hiện kỹ năng Drift xe thượng thừa vào ban đêm.",
+                keywords: ["drift", "đua xe", "xe hơi", "khói"]
+            },
+            {
+                id: 8,
+                title: "Moto X3M Pro",
+                category: "Đua xe",
+                image: "https://image.pollinations.ai/prompt/motocross%20stunt%20game%20side%20view%20dirt%20track?width=400&height=300&nologo=true",
+                url: "",
+                description: "Đua xe địa hình vượt chướng ngại vật mạo hiểm.",
+                keywords: ["xe máy", "mô tô", "địa hình", "bay"]
+            },
+            {
+                id: 9,
+                title: "F1 Arcade",
+                category: "Đua xe",
+                image: "https://image.pollinations.ai/prompt/formula%201%20racing%20game%20top%20down%20view?width=400&height=300&nologo=true",
+                url: "",
+                description: "Giải đua công thức 1 góc nhìn từ trên cao.",
+                keywords: ["f1", "công thức 1", "đua xe", "tốc độ"]
+            },
+
+            // --- TRÍ TUỆ (PUZZLE) ---
+            {
+                id: 10,
+                title: "Brain Master",
+                category: "Trí tuệ",
+                image: "https://image.pollinations.ai/prompt/brain%20puzzle%20game%20logic%20vector%20icon?width=400&height=300&nologo=true",
+                url: "",
+                description: "Thử thách IQ với hàng trăm câu đố.",
+                keywords: ["trí tuệ", "giải đố", "iq", "logic"]
+            },
+            {
+                id: 11,
+                title: "Chess Classic",
+                category: "Trí tuệ",
+                image: "https://image.pollinations.ai/prompt/chess%20board%20game%20strategy%20high%20quality?width=400&height=300&nologo=true",
+                url: "",
+                description: "Cờ vua kinh điển cho người yêu chiến thuật.",
+                keywords: ["cờ vua", "cờ", "chiến thuật", "board game"]
+            },
+            {
+                id: 12,
+                title: "2048 Neon",
+                category: "Trí tuệ",
+                image: "https://image.pollinations.ai/prompt/2048%20number%20puzzle%20game%20neon%20style?width=400&height=300&nologo=true",
+                url: "",
+                description: "Ghép số 2048 phiên bản đèn Neon rực rỡ.",
+                keywords: ["2048", "số", "toán học", "giải đố"]
+            },
+            {
+                id: 13,
+                title: "Hexa Puzzle",
+                category: "Trí tuệ",
+                image: "https://image.pollinations.ai/prompt/hexagon%20puzzle%20game%20colorful%20blocks?width=400&height=300&nologo=true",
+                url: "",
+                description: "Xếp hình khối lục giác đầy màu sắc.",
+                keywords: ["xếp hình", "khối", "màu sắc", "logic"]
+            },
+            {
+                id: 14,
+                title: "Tower Crush",
+                category: "Trí tuệ",
+                image: "https://image.pollinations.ai/prompt/tower%20defense%20game%20fantasy%20kingdom%20strategy?width=400&height=300&nologo=true",
+                url: "",
+                description: "Xây dựng tháp phòng thủ bảo vệ vương quốc.",
+                keywords: ["thủ thành", "chiến thuật", "tower defense", "xây dựng"]
+            },
+
+            // --- THỂ THAO & VUI NHỘN (SPORTS & FUN) ---
+            {
+                id: 15,
+                title: "Super Kicker",
+                category: "Thể thao",
+                image: "https://image.pollinations.ai/prompt/football%20penalty%20kick%20game%20stadium?width=400&height=300&nologo=true",
+                url: "",
+                description: "Sút phạt đền và trở thành siêu sao bóng đá.",
+                keywords: ["bóng đá", "đá banh", "sút", "thể thao"]
+            },
+            {
+                id: 16,
+                title: "Basket Dunk",
+                category: "Thể thao",
+                image: "https://image.pollinations.ai/prompt/basketball%20slam%20dunk%20game%20arcade%20style?width=400&height=300&nologo=true",
+                url: "",
+                description: "Úp rổ nghệ thuật trên đường phố.",
+                keywords: ["bóng rổ", "ném bóng", "thể thao", "dunk"]
+            },
+            {
+                id: 17,
+                title: "Candy Match",
+                category: "Thể thao",
+                image: "https://image.pollinations.ai/prompt/colorful%20candy%20match%203%20game%20ui?width=400&height=300&nologo=true",
+                url: "",
+                description: "Xếp kẹo ngọt ngào đầy màu sắc vui nhộn.",
+                keywords: ["kẹo", "xếp hình", "match 3", "vui"]
+            },
+            {
+                id: 18,
+                title: "Flappy Dragon",
+                category: "Thể thao",
+                image: "https://image.pollinations.ai/prompt/cute%20dragon%20flying%20flappy%20bird%20style%20game?width=400&height=300&nologo=true",
+                url: "",
+                description: "Điều khiển rồng bay vượt chướng ngại vật.",
+                keywords: ["bay", "vui nhộn", "flappy", "giải trí"]
+            }
+        ];
+
+        // --- KHỞI TẠO DỮ LIỆU ---
+        // Load từ LocalStorage nếu có, không thì dùng mặc định
+        let games = JSON.parse(localStorage.getItem('king_games_data')) || defaultGames;
+
+        // --- CORE FUNCTIONS ---
+        const gameGrid = document.getElementById('gameGrid');
+        const gameCountSpan = document.getElementById('gameCount');
+        const emptyState = document.getElementById('emptyState');
+        const listTitle = document.getElementById('listTitle');
+
+        function renderGames(gameList = games) {
+            gameGrid.innerHTML = '';
+            gameCountSpan.innerText = gameList.length;
+
+            if (gameList.length === 0) {
+                gameGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                gameGrid.classList.remove('hidden');
+                emptyState.classList.add('hidden');
+            }
+
+            // Đảo ngược danh sách để game mới đăng lên đầu
+            const displayList = [...gameList].reverse();
+
+            displayList.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card group glass-card rounded-2xl overflow-hidden cursor-pointer relative';
+                card.onclick = () => openGame(game);
+                
+                card.innerHTML = `
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="${game.image}" alt="${game.title}" class="w-full h-full object-cover transition duration-700 group-hover:scale-110" onerror="this.src='https://placehold.co/400x300/18181b/FFF?text=Game'">
+                        <div class="absolute inset-0 play-overlay opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center backdrop-blur-[2px]">
+                            <div class="w-16 h-16 rounded-full bg-brand-600 text-white flex items-center justify-center transform scale-0 group-hover:scale-100 transition-transform duration-300 shadow-neon">
+                                <i class="fas fa-play text-2xl ml-1"></i>
+                            </div>
+                        </div>
+                        <div class="absolute top-3 right-3">
+                             <span class="text-[10px] font-bold uppercase tracking-wider bg-black/60 backdrop-blur text-white px-2 py-1 rounded border border-white/10">
+                                ${game.category}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="p-5">
+                        <h3 class="font-display font-bold text-lg text-white mb-2 truncate group-hover:text-brand-500 transition-colors">${game.title}</h3>
+                        <p class="text-gray-400 text-sm line-clamp-2 leading-relaxed">${game.description}</p>
+                        <div class="mt-4 flex justify-between items-center text-xs text-gray-500 font-medium">
+                            <span class="flex items-center gap-1"><i class="fas fa-star text-yellow-500"></i> ${(4 + Math.random()).toFixed(1)}</span>
+                            <span class="flex items-center gap-1"><i class="fas fa-user"></i> ${(Math.floor(Math.random() * 20) + 1)}k plays</span>
+                        </div>
+                    </div>
+                `;
+                gameGrid.appendChild(card);
+            });
+        }
+
+        // --- ADD GAME LOGIC (NEW) ---
+        const addGameModal = document.getElementById('addGameModal');
+        const addGameContent = document.getElementById('addGameContent');
+
+        function openAddGameModal() {
+            addGameModal.classList.remove('hidden');
+            setTimeout(() => {
+                addGameModal.classList.remove('opacity-0');
+                addGameContent.classList.remove('scale-95');
+                addGameContent.classList.add('scale-100');
+            }, 10);
+        }
+
+        function closeAddGameModal() {
+            addGameModal.classList.add('opacity-0');
+            addGameContent.classList.remove('scale-100');
+            addGameContent.classList.add('scale-95');
+            setTimeout(() => {
+                addGameModal.classList.add('hidden');
+                document.getElementById('addGameForm').reset();
+            }, 300);
+        }
+
+        function handleAddGame(e) {
+            e.preventDefault();
+            
+            // Lấy dữ liệu từ form
+            const title = document.getElementById('newGameTitle').value;
+            const category = document.getElementById('newGameCategory').value;
+            const image = document.getElementById('newGameImage').value;
+            const url = document.getElementById('newGameUrl').value;
+            const desc = document.getElementById('newGameDesc').value;
+
+            // Tạo object game mới
+            const newGame = {
+                id: Date.now(), // ID duy nhất dựa trên thời gian
+                title: title,
+                category: category,
+                image: image,
+                url: url,
+                description: desc,
+                keywords: [title.toLowerCase(), category.toLowerCase()]
+            };
+
+            // Thêm vào mảng
+            games.push(newGame);
+
+            // Lưu vào LocalStorage
+            localStorage.setItem('king_games_data', JSON.stringify(games));
+
+            // Render lại giao diện
+            filterGames('all');
+            
+            // Thông báo và đóng modal
+            alert('Đăng game thành công!');
+            closeAddGameModal();
+        }
+
+        // Search & Filter
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('keyup', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = games.filter(g => 
+                g.title.toLowerCase().includes(query) || 
+                g.category.toLowerCase().includes(query)
+            );
+            listTitle.innerText = query ? `Kết quả cho: "${e.target.value}"` : "Tất cả trò chơi";
+            renderGames(filtered);
+        });
+
+        function setSearch(keyword) {
+            searchInput.value = keyword;
+            const event = new Event('keyup');
+            searchInput.dispatchEvent(event);
+            toggleChat(); 
+            scrollToGames();
+        }
+
+        function filterGames(category) {
+            document.querySelectorAll('nav a').forEach(el => el.classList.remove('border-brand-500', 'text-white'));
+            
+            if (category === 'all') {
+                listTitle.innerText = "Tất cả trò chơi";
+                renderGames(games);
+            } else {
+                listTitle.innerText = `Kho game: ${category}`;
+                if (category === 'Thể thao') {
+                     const filtered = games.filter(g => g.category === 'Thể thao' || g.category === 'Vui nhộn');
+                     renderGames(filtered);
+                } else {
+                     const filtered = games.filter(g => g.category === category);
+                     renderGames(filtered);
+                }
+            }
+        }
+
+        function scrollToGames() {
+            document.getElementById('listTitle').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // --- MODAL SYSTEM ---
+        const modal = document.getElementById('gameModal');
+        const iframe = document.getElementById('gameFrame');
+        const loading = document.getElementById('gameLoading');
+
+        function openGame(game) {
+            document.getElementById('modalTitle').innerText = game.title;
+            document.getElementById('modalCategory').innerText = game.category;
+            document.getElementById('modalDesc').innerText = game.description;
+            
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+            
+            loading.classList.remove('hidden'); 
+
+            if (game.url && game.url.length > 0) {
+                 iframe.src = game.url;
+                 iframe.onload = () => {
+                     setTimeout(() => loading.classList.add('hidden'), 800);
+                 };
+            } else {
+                const placeholderContent = `
+                    <body style="background:#09090b; color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:'Segoe UI', sans-serif; margin:0;">
+                        <h1 style="color:#ef4444; font-size:3rem; margin-bottom:10px; text-transform: uppercase; letter-spacing: 2px;">${game.title}</h1>
+                        <p style="color:#a1a1aa; margin-bottom: 30px;">Server Demo: Chưa kết nối dữ liệu game thực tế.</p>
+                        <button onclick="alert('Bắt đầu game!')" style="padding:12px 30px; background:#dc2626; color:white; border:none; border-radius:50px; cursor:pointer; font-weight:bold; font-size: 1rem; box-shadow: 0 0 20px rgba(220, 38, 38, 0.4); transition: transform 0.2s;">CHƠI NGAY</button>
+                    </body>
+                `;
+                setTimeout(() => {
+                    loading.classList.add('hidden');
+                    const doc = iframe.contentWindow.document;
+                    doc.open();
+                    doc.write(placeholderContent);
+                    doc.close();
+                }, 1500);
+            }
+        }
+
+        function closeGame() {
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                iframe.src = ''; 
+            }, 300);
+        }
+
+        // --- CHATBOT ---
+        const chatWindow = document.getElementById('chatWindow');
+        const chatInput = document.getElementById('chatInput');
+        const chatMessages = document.getElementById('chatMessages');
+
+        function toggleChat() {
+            chatWindow.classList.toggle('hidden');
+            if (!chatWindow.classList.contains('hidden')) {
+                chatInput.focus();
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+        }
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            addMessage(text, 'user');
+            chatInput.value = '';
+
+            showTypingIndicator();
+
+            setTimeout(() => {
+                removeTypingIndicator();
+                const response = getBotResponse(text);
+                addMessage(response, 'bot');
+            }, 1000);
+        }
+
+        function addMessage(text, sender) {
+            const div = document.createElement('div');
+            div.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start items-end gap-2'} chat-message`;
+            
+            if (sender === 'bot') {
+                 div.innerHTML = `
+                    <div class="w-6 h-6 rounded-full bg-brand-600 flex-shrink-0 flex items-center justify-center text-[10px]"><i class="fas fa-robot"></i></div>
+                    <div class="bg-dark-800 border border-gray-700 text-gray-200 rounded-2xl rounded-bl-none py-2.5 px-4 max-w-[85%] text-sm shadow-sm">
+                        ${text}
+                    </div>
+                `;
+            } else {
+                div.innerHTML = `
+                    <div class="bg-brand-600 text-white rounded-2xl rounded-br-none py-2.5 px-4 max-w-[85%] text-sm shadow-lg shadow-red-900/20">
+                        ${text}
+                    </div>
+                `;
+            }
+            
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const div = document.createElement('div');
+            div.id = 'typingIndicator';
+            div.className = 'flex justify-start items-end gap-2 chat-message';
+            div.innerHTML = `
+                <div class="w-6 h-6 rounded-full bg-brand-600 flex-shrink-0 flex items-center justify-center text-[10px]"><i class="fas fa-robot"></i></div>
+                <div class="bg-dark-800 border border-gray-700 rounded-2xl rounded-bl-none py-3 px-4 shadow-sm flex gap-1">
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></span>
+                    <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></span>
+                </div>
+            `;
+            chatMessages.appendChild(div);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        function getBotResponse(input) {
+            const lowerInput = input.toLowerCase();
+            let recommended = games.filter(g => 
+                lowerInput.includes(g.title.toLowerCase()) || 
+                lowerInput.includes(g.category.toLowerCase()) ||
+                (g.keywords && g.keywords.some(k => lowerInput.includes(k)))
+            );
+
+            if (recommended.length > 0) {
+                const topGames = recommended.slice(0, 3);
+                let html = "Tìm thấy kèo ngon cho anh em đây: 🔥<br>";
+                topGames.forEach(g => {
+                    html += `<div class='mt-2 p-2 rounded bg-dark-900 border border-gray-700 hover:border-brand-500 cursor-pointer transition flex gap-2 items-center' onclick='openGame(games.find(x => x.id === ${g.id}))'>
+                                <img src="${g.image}" class="w-8 h-8 rounded object-cover">
+                                <div>
+                                    <div class="font-bold text-brand-400 text-xs">${g.title}</div>
+                                    <div class="text-[10px] text-gray-500">${g.category}</div>
+                                </div>
+                             </div>`;
+                });
+                return html;
+            }
+
+            if (['hi', 'chào', 'hello'].some(v => lowerInput.includes(v))) {
+                return "Chào người anh em! Hôm nay muốn đua xe hay bắn súng đây?";
+            }
+            
+            return "Ca này khó! Thử tìm từ khóa khác như 'đua xe', 'zombie' xem sao?";
+        }
+
+        // Initialize
+        renderGames();
+    </script>
+</body>
+</html>

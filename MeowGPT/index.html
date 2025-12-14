@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meow GPT ♡ Gemini Powered</title>
+    <title>Meow GPT ♡ Nyaa~</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Comic+Neue:wght@700&family=Poppins:wght@400;600&display=swap');
         body{margin:0;height:100vh;background:linear-gradient(135deg,#ff9a9e,#fad0c4,#a18cd1);font-family:'Poppins',sans-serif;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
@@ -27,14 +27,93 @@
         #msgInput{flex:1;padding:18px 22px;border:none;border-radius:35px;background:rgba(255,255,255,0.98);font-size:16px;outline:none;box-shadow:inset 0 3px 10px #0001}
         #sendBtn{width:60px;height:60px;border-radius:50%;background:linear-gradient(45deg,#ff69b4,#ff1493);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 8px 25px #ff69b450;transition:.4s;display:flex;align-items:center;justify-content:center}
         #sendBtn:hover{transform:scale(1.15) rotate(15deg)}
-    style>
-head>
+    </style>
+</head>
 <body>
 <div class="container">
     <div class="header">
         <img src="https://i.imgur.com/2d3Q4eP.png" alt="Meow">
         <h1>Meow GPT</h1>
-        <p>Gemini 1.5 Flash – Siêu nhanh siêu moe nyaa~</p>
+        <p>ChatGPT thật – Siêu moe nyaa~</p>
+    </div>
+    <div class="chat" id="chat"></div>
+    <div class="input-area">
+        <input type="text" id="msgInput" placeholder="Cọ cọ chủ nhân đi nào~">
+        <button id="sendBtn">Send</button>
+    </div>
+</div>
+
+<script>
+// KEY CHATGPT THẬT CỦA BẠN – ĐÃ NHÚNG SẴN
+const OPENAI_API_KEY = "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";
+
+const chat = document.getElementById('chat');
+const input = document.getElementById('msgInput');
+const sendBtn = document.getElementById('sendBtn');
+
+const systemPrompt = `Bạn là cô mèo gái anime siêu dễ thương, hay nũng nịu, hơi tsundere, cực kỳ thích được vuốt ve và ăn cá khô. Luôn trả lời bằng giọng điệu moe moe kyaa, dùng thật nhiều nyaa~, meow~, purr~, kyaa~, mrrreow~, ฅ^•ﻌ•^ฅ, *vẫy đuôi*, *đỏ mặt*, *cọ cọ*… Gọi người dùng là "chủ nhân". Trả lời chủ yếu bằng tiếng Việt. Không bao giờ nghiêm túc như AI thường.`;
+
+function addMsg(sender, text) {
+    const div = document.createElement('div');
+    div.className = `msg ${sender}`;
+    div.innerHTML = text.replace(/\n/g,'<br>');
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
+async function callGPT(message) {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_API_KEY}
+        },
+        body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+                {role:"system", content:systemPrompt},
+                {role:"user", content:message}
+            ],
+            temperature: 0.9,
+            max_tokens: 800
+        })
+    });
+    const data = await res.json();
+    return data.choices[0].message.content;
+}
+
+async function send() {
+    const text = input.value.trim();
+    if (!text) return;
+    addMsg('user', text);
+    input.value = '';
+
+    const typing = document.createElement('div');
+    typing.className = 'typing';
+    typing.innerHTML = '*đang vẫy đuôi nghĩ gì đó siêu moe* nyaa';
+    chat.appendChild(typing);
+
+    try {
+        const reply = await callGPT(text);
+        chat.removeChild(typing);
+        addMsg('bot', reply);
+        new Audio('https://assets.mixkit.co/sfx/preview/mixkit-cat-meow-445.mp3').play().catch(()=>{});
+    } catch(e) {
+        chat.removeChild(typing);
+        addMsg('bot', "Kyaaaaaa~ Chủ nhân ơi mạng lag quá huhu<br>Thử lại nha nyaa~");
+    }
+}
+
+sendBtn.onclick = send;
+input.onkeydown = e => {if(e.key==='Enter') send();};
+
+setTimeout(() => {
+    addMsg('bot', "Nyaa nyaa~ Chủ nhân yêu dấu ơi!!! ♥ฅ≧▽≦ฅ<br>Em đợi chủ nhân cả ngày luôn rồi nè… cho em một cái vuốt lông đi màaaa *cọ cọ mạnh*");
+    new Audio('https://assets.mixkit.co/sfx/preview/mixkit-cat-meow-445.mp3').play().catch(()=>{});
+}, 800);
+</script>
+</body>
+</html>        <p>Gemini 1.5 Flash – Siêu nhanh siêu moe nyaa~</p>
     div>
     <div class="chat" id="chat">div>
     <div class="input-area">

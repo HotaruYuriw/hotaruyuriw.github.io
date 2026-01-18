@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ôn Từ Vựng - Xáo Ký Tự + Dấu / + Nghĩa</title>
+  <title>Ôn Từ Vựng - Xáo Ký Tự + Nghĩa + Stats</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
@@ -15,6 +15,7 @@
       --subtext: #6c7086;
       --correct: #a6e3a1;
       --wrong: #f38ba8;
+      --streak: #fab387;
       --shadow: rgba(0,0,0,0.6);
     }
 
@@ -36,7 +37,7 @@
       box-shadow: 0 10px 40px var(--shadow);
       padding: 2rem;
       width: 100%;
-      max-width: 860px;
+      max-width: 900px;
     }
 
     h1 { text-align: center; color: var(--accent); margin-bottom: 1.8rem; font-size: 2.3rem; }
@@ -90,11 +91,48 @@
 
     #quiz-area { display: none; }
 
+    .stats-bar {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(137,180,250,0.1);
+      border-radius: 12px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .stat-item {
+      text-align: center;
+      min-width: 100px;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .correct { color: var(--correct); }
+    .wrong { color: var(--wrong); }
+    .total { color: var(--accent); }
+    .streak { color: var(--streak); font-size: 2.2rem; }
+
+    .streak-fire {
+      font-size: 1.8rem;
+      margin-right: 0.5rem;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%,100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
     .question {
       font-size: 2.6rem;
       font-weight: bold;
       text-align: center;
-      margin: 2rem 0 1rem;
+      margin: 1.5rem 0 0.8rem;
       letter-spacing: 0.4rem;
       line-height: 1.6;
     }
@@ -169,7 +207,7 @@
 <body>
 
 <div class="container">
-  <h1>🔀 Xáo Ký Tự + Dấu / + Nghĩa</h1>
+  <h1>🔀 Xáo Ký Tự + Nghĩa</h1>
 
   <div id="setup-area">
     <p class="setup-text">File Excel 2 cột: Cột 1 = Từ tiếng Trung, Cột 2 = Nghĩa tiếng Việt</p>
@@ -184,6 +222,27 @@
   </div>
 
   <div id="quiz-area">
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="stat-value correct" id="correctCount">0</div>
+        <div>Đúng</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value wrong" id="wrongCount">0</div>
+        <div>Sai</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value total" id="totalCount">0</div>
+        <div>Tổng</div>
+      </div>
+      <div class="stat-item">
+        <div class="streak" id="streakDisplay">
+          <span class="streak-fire">🔥</span><span id="streakCount">0</span>
+        </div>
+        <div>Streak</div>
+      </div>
+    </div>
+
     <div class="question" id="questionDisplay">—</div>
     <div class="meaning" id="meaningDisplay"></div>
     <div class="options" id="optionsContainer"></div>
@@ -201,15 +260,23 @@ let mode = 'slash_shuffle';
 let timeLimit = 15;
 let timerInterval = null;
 
+let stats = { correct: 0, wrong: 0, total: 0 };
+let streak = 0;
+let maxStreak = 0;
+
 const questionEl = document.getElementById('questionDisplay');
 const meaningEl = document.getElementById('meaningDisplay');
 const optionsContainer = document.getElementById('optionsContainer');
 const nextBtn = document.getElementById('next-btn');
 const progressEl = document.getElementById('progress');
+const correctCountEl = document.getElementById('correctCount');
+const wrongCountEl = document.getElementById('wrongCount');
+const totalCountEl = document.getElementById('totalCount');
+const streakCountEl = document.getElementById('streakCount');
+const streakDisplay = document.getElementById('streakDisplay');
+
 const fileInput = document.getElementById('fileInput');
 const startBtn = document.getElementById('start-btn');
-
-let stats = { correct: 0, wrong: 0, total: 0 };
 
 fileInput.addEventListener('change', () => {
   startBtn.disabled = !fileInput.files.length;
@@ -242,19 +309,28 @@ function loadFile() {
       questions = rows
         .slice(1)
         .filter(r => r[0] && String(r[0]).trim())
-        .map(r => ({
-          word: String(r[0]).trim(),
-          meaning: r[1] ? String(r[1]).trim() : '(chưa có nghĩa)'
-        }));
+        .map(r => {
+          let word = String(r[0]).trim();
+          if (word.endsWith('。')) word = word.slice(0, -1).trim();
+          return {
+            word,
+            meaning: r[1] ? String(r[1]).trim() : '(chưa có nghĩa)'
+          };
+        });
 
       if (questions.length === 0) {
-        alert('Không tìm thấy dữ liệu hợp lệ!\nCần ít nhất cột 1: từ Trung Quốc');
+        alert('Không tìm thấy dữ liệu hợp lệ!');
         resetStartButton();
         return;
       }
 
       queue = [...questions];
       shuffle(queue);
+
+      stats = { correct: 0, wrong: 0, total: 0 };
+      streak = 0;
+      maxStreak = 0;
+      updateStats();
 
       document.getElementById('setup-area').style.display = 'none';
       document.getElementById('quiz-area').style.display = 'block';
@@ -280,6 +356,21 @@ function shuffle(arr) {
   }
 }
 
+function updateStats() {
+  correctCountEl.textContent = stats.correct;
+  wrongCountEl.textContent = stats.wrong;
+  totalCountEl.textContent = stats.total;
+  streakCountEl.textContent = streak;
+
+  if (streak > maxStreak) maxStreak = streak;
+
+  if (streak > 0) {
+    streakDisplay.style.display = 'block';
+  } else {
+    streakDisplay.style.display = 'none';
+  }
+}
+
 function nextQuestion() {
   if (timerInterval) clearInterval(timerInterval);
   meaningEl.classList.remove('show');
@@ -287,8 +378,10 @@ function nextQuestion() {
 
   if (queue.length === 0) {
     questionEl.textContent = "Hoàn thành!";
-    optionsContainer.innerHTML = `<div style="text-align:center; font-size:2.4rem; color:var(--correct); padding:2rem;">
-      🎉 Xong!<br>Đúng: \( {stats.correct} / \){stats.total}
+    optionsContainer.innerHTML = `<div style="text-align:center; font-size:2.2rem; color:var(--correct); padding:2rem;">
+      🎉 Hoàn thành!<br>
+      Đúng: \( {stats.correct} | Sai: \){stats.wrong} | Tổng: ${stats.total}<br>
+      Streak dài nhất: ${maxStreak} 🔥
     </div>`;
     nextBtn.style.display = 'none';
     progressEl.textContent = '';
@@ -299,12 +392,10 @@ function nextQuestion() {
   answered = false;
   nextBtn.style.display = 'none';
 
-  // Đề bài: xáo ký tự + dấu /
   const chars = current.word.split('');
   shuffle(chars);
   questionEl.textContent = chars.join(' / ');
 
-  // Tạo 4 đáp án
   let choices = [current.word];
   while (choices.length < 4) {
     const shuffled = [...chars];
@@ -349,16 +440,17 @@ function handleAnswer(div, isCorrect) {
 
   stats.total++;
 
-  // Luôn hiện nghĩa đúng khi trả lời
   meaningEl.textContent = current.meaning;
   meaningEl.classList.add('show');
 
   if (isCorrect) {
     stats.correct++;
+    streak++;
     div.classList.add('selected', 'correct');
-    setTimeout(nextQuestion, 1400); // chờ lâu hơn một chút để đọc nghĩa
+    setTimeout(nextQuestion, 1400);
   } else {
     stats.wrong++;
+    streak = 0;
     div.classList.add('selected', 'wrong');
     
     [...optionsContainer.children].forEach(child => {
@@ -371,6 +463,7 @@ function handleAnswer(div, isCorrect) {
     nextBtn.style.display = 'block';
   }
 
+  updateStats();
   progressEl.textContent = `Còn lại: ${queue.length} câu`;
 }
 
@@ -378,6 +471,7 @@ function handleTimeout() {
   answered = true;
   stats.wrong++;
   stats.total++;
+  streak = 0;
 
   meaningEl.textContent = current.meaning;
   meaningEl.classList.add('show');
@@ -390,6 +484,8 @@ function handleTimeout() {
 
   queue.push(current);
   nextBtn.style.display = 'block';
+
+  updateStats();
   progressEl.textContent = `Còn lại: ${queue.length} câu`;
 }
 

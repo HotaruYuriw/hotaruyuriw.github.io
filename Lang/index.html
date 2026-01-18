@@ -7,7 +7,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
-    /* Giữ nguyên toàn bộ style cũ - rất đẹp rồi! */
     :root {
       --bg: #1a1b26;
       --surface: #24283b;
@@ -19,7 +18,12 @@
       --shadow: rgba(0,0,0,0.4);
     }
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'JetBrains Mono', monospace;
       background: var(--bg);
@@ -30,6 +34,7 @@
       align-items: center;
       padding: 20px;
     }
+
     .container {
       background: var(--surface);
       border-radius: 12px;
@@ -37,15 +42,22 @@
       padding: 2rem;
       width: 100%;
       max-width: 800px;
+      transition: all 0.3s ease;
     }
+
     h1 {
       text-align: center;
       color: var(--accent);
       margin-bottom: 1.5rem;
       font-size: 1.8rem;
+      text-shadow: 0 2px 4px var(--shadow);
     }
-    #setup-area { text-align: center; }
-    #language-select {
+
+    #setup-area {
+      text-align: center;
+    }
+
+    input[type="file"] {
       background: var(--bg);
       color: var(--text);
       border: 1px solid var(--subtext);
@@ -53,8 +65,11 @@
       padding: 0.8rem;
       font-size: 1rem;
       margin-bottom: 1rem;
-      width: 280px;
+      width: 100%;
+      max-width: 400px;
+      cursor: pointer;
     }
+
     #start-btn {
       background: var(--accent);
       color: var(--bg);
@@ -63,24 +78,36 @@
       padding: 0.8rem 1.5rem;
       font-size: 1rem;
       cursor: pointer;
+      transition: all 0.3s;
     }
-    #start-btn:hover { background: #5a7ec7; transform: scale(1.05); }
-    #quiz-area { display: none; }
+
+    #start-btn:hover {
+      background: #5a7ec7;
+      transform: scale(1.05);
+    }
+
+    #quiz-area {
+      display: none;
+    }
+
     .word {
       font-size: 2.4rem;
       font-weight: bold;
       text-align: center;
       margin: 1.5rem 0 2.5rem;
-      padding: 1rem;
+      padding: 1.2rem;
       background: var(--bg);
       border-radius: 8px;
+      box-shadow: inset 0 2px 8px var(--shadow);
     }
+
     .options {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
       gap: 1.2rem;
       margin: 1.5rem 0;
     }
+
     .option {
       padding: 1.3rem;
       background: var(--surface);
@@ -88,13 +115,81 @@
       border-radius: 8px;
       cursor: pointer;
       transition: all 0.3s ease;
-      min-height: 130px;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: center;
       text-align: center;
+      min-height: 130px;
     }
-    /* ... phần còn lại của CSS giữ nguyên ... */
+
+    .option:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 4px 16px var(--shadow);
+    }
+
+    .option.selected.correct {
+      background: rgba(158,206,106,0.2);
+      border-color: var(--correct);
+      box-shadow: 0 0 0 3px rgba(158,206,106,0.3);
+    }
+
+    .option.selected.wrong {
+      background: rgba(247,118,142,0.2);
+      border-color: var(--wrong);
+      box-shadow: 0 0 0 3px rgba(247,118,142,0.3);
+    }
+
+    .meaning-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .meaning-pair span:first-child {
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    .meaning-pair span:last-child {
+      color: var(--subtext);
+      font-size: 0.9rem;
+    }
+
+    #next-btn {
+      width: 100%;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      font-size: 1.1rem;
+      color: var(--bg);
+      background: var(--accent);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: none;
+    }
+
+    #next-btn:hover {
+      background: #5a7ec7;
+      transform: scale(1.02);
+    }
+
+    .progress {
+      text-align: center;
+      color: var(--subtext);
+      margin-top: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease;
+    }
   </style>
 </head>
 <body>
@@ -103,15 +198,12 @@
   <h1>Ôn Từ Vựng Tiếng Trung</h1>
 
   <div id="setup-area">
-    <p style="margin-bottom: 1rem; color: var(--subtext);">
-      Đặt file <strong>vocab_cn.xlsx</strong> cùng thư mục với file html này
+    <p style="margin-bottom: 1.2rem; color: var(--subtext);">
+      Chọn file <strong>vocab_cn.xlsx</strong> từ máy tính của bạn
     </p>
-    <select id="language-select">
-      <option value="cn">Tiếng Trung (vocab_cn.xlsx)</option>
-      <!-- Có thể thêm lại các ngôn ngữ khác sau nếu cần -->
-    </select>
+    <input type="file" id="fileInput" accept=".xlsx" />
     <br><br>
-    <button id="start-btn" onclick="loadFile()">Bắt đầu ôn</button>
+    <button id="start-btn" onclick="loadSelectedFile()">Bắt đầu ôn</button>
   </div>
 
   <div id="quiz-area">
@@ -136,33 +228,32 @@ const optionsContainer = document.getElementById('optionsContainer');
 const nextBtn = document.getElementById('next-btn');
 const progressEl = document.getElementById('progress');
 
-async function loadFile() {
-  const lang = document.getElementById('language-select').value;
-  const fileName = `vocab_${lang}.xlsx`;
+async function loadSelectedFile() {
+  const fileInput = document.getElementById('fileInput');
+  const file = fileInput.files[0];
+  
+  if (!file) {
+    alert('Vui lòng chọn file vocab_cn.xlsx trước!');
+    return;
+  }
 
   try {
-    const response = await fetch(fileName);
-    if (!response.ok) throw new Error('Không tìm thấy file');
-    const arrayBuffer = await response.arrayBuffer();
+    const arrayBuffer = await file.arrayBuffer();
     const workbook = XLSX.read(arrayBuffer, {type: 'array'});
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
     const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
 
-    // Cấu trúc file vocab_cn.xlsx mong đợi:
-    // Cột A: Nghĩa tiếng Việt 1
-    // Cột B: Nghĩa tiếng Việt 2 (nếu có - có thể để trống)
-    // Cột C: Từ tiếng Trung (Hán tự + pinyin nếu muốn)
     questions = rows
       .slice(1)
-      .filter(r => r[2] && r[0]) // ít nhất phải có từ Trung + nghĩa 1
+      .filter(r => r[2] && r[0]) // Ít nhất có từ Trung + nghĩa chính
       .map(r => ({
-        word: String(r[2]).trim(),           // từ tiếng Trung (hiển thị làm câu hỏi)
-        a: String(r[0]).trim(),              // nghĩa tiếng Việt chính
-        b: String(r[1] || "").trim()         // nghĩa phụ (nếu có)
+        word: String(r[2]).trim(),           // Từ tiếng Trung (hiển thị câu hỏi)
+        a: String(r[0]).trim(),              // Nghĩa tiếng Việt chính
+        b: String(r[1] || "").trim()         // Nghĩa phụ (nếu có)
       }));
 
     if (questions.length === 0) {
-      alert('Không tìm thấy dữ liệu hợp lệ trong file vocab_cn.xlsx');
+      alert('Không tìm thấy dữ liệu hợp lệ trong file!\nKiểm tra lại định dạng file.');
       return;
     }
 
@@ -174,9 +265,7 @@ async function loadFile() {
 
     nextQuestion();
   } catch (err) {
-    alert('Lỗi tải file: ' + err.message + '\n' +
-          '→ Đảm bảo file "vocab_cn.xlsx" nằm cùng thư mục\n' +
-          '→ Mở file html bằng trình duyệt (không dùng file:// nếu có thể)');
+    alert('Lỗi khi đọc file: ' + err.message + '\nĐảm bảo file là .xlsx hợp lệ.');
   }
 }
 
@@ -187,7 +276,6 @@ function shuffle(array) {
   }
 }
 
-// Phần còn lại của script (nextQuestion, updateProgress,...) giữ nguyên như bản cũ
 function nextQuestion() {
   if (queue.length === 0) {
     wordEl.textContent = "Hoàn thành!";
@@ -207,7 +295,7 @@ function nextQuestion() {
   let choices = [current];
   while (choices.length < 4) {
     const rand = questions[Math.floor(Math.random() * questions.length)];
-    if (!choices.some(c => c.a === rand.a && c.b === rand.b)) {
+    if (!choices.some(c => c.word === rand.word)) {
       choices.push(rand);
     }
   }
@@ -228,14 +316,14 @@ function nextQuestion() {
       if (answered) return;
       answered = true;
 
-      const isCorrect = item.a === current.a && item.b === current.b;
+      const isCorrect = item.word === current.word;
 
       div.classList.add('selected', isCorrect ? 'correct' : 'wrong');
 
       if (!isCorrect) {
         [...optionsContainer.children].forEach(child => {
           const spans = child.querySelectorAll('span');
-          if (spans[0].textContent === current.a && 
+          if (spans[0].textContent === current.a &&
               (!current.b || spans[1]?.textContent === current.b)) {
             child.classList.add('selected', 'correct');
           }
@@ -249,7 +337,7 @@ function nextQuestion() {
 
         nextBtn.style.display = 'block';
       } else {
-        setTimeout(nextQuestion, 900); // Tự động sang câu tiếp theo khi đúng
+        setTimeout(nextQuestion, 900);
       }
 
       updateProgress();

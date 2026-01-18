@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ôn Từ Vựng - Flashcard Quiz</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <style>
+    :root {
+      --primary: #4361ee;
+      --correct: #4cc9f0;
+      --wrong: #f72585;
+      --bg: #f8f9fa;
+      --card: white;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #333;
+      min-height: 100vh;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 580px;
+      transition: transform 0.3s;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary);
+      margin-bottom: 1.8rem;
+      font-size: 2.1rem;
+      font-weight: 700;
+    }
+
+    #upload-area {
+      text-align: center;
+      padding: 2rem 1rem;
+      border: 3px dashed #aaa;
+      border-radius: 12px;
+      background: #f8f9fa;
+      transition: all 0.3s;
+    }
+
+    #upload-area:hover {
+      border-color: var(--primary);
+      background: #eef2ff;
+    }
+
+    #quiz-area {
+      display: none;
+    }
+
+    .word {
+      font-size: 2.4rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 1.5rem 0 2.5rem;
+      color: #222;
+      padding: 0.8rem;
+      background: #f0f4ff;
+      border-radius: 12px;
+    }
+
+    .options {
+      display: grid;
+      gap: 14px;
+      margin: 1.5rem 0;
+    }
+
+    .option {
+      padding: 18px 24px;
+      background: #ffffff;
+      border: 2px solid #ddd;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-size: 1.1rem;
+      line-height: 1.4;
+    }
+
+    .option:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 15px rgba(67,97,238,0.2);
+      border-color: var(--primary);
+    }
+
+    .option.selected.correct {
+      background: rgba(76,201,240,0.15);
+      border-color: var(--correct);
+      box-shadow: 0 0 0 4px rgba(76,201,240,0.2);
+    }
+
+    .option.selected.wrong {
+      background: rgba(247,37,133,0.12);
+      border-color: var(--wrong);
+    }
+
+    .meaning-pair {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .meaning-pair span:first-child {
+      font-weight: 600;
+      color: #2b2d42;
+    }
+
+    .meaning-pair span:last-child {
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    #next-btn {
+      width: 100%;
+      padding: 16px;
+      margin-top: 1.5rem;
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: white;
+      background: var(--primary);
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: none;
+    }
+
+    #next-btn:hover {
+      background: #3f37c9;
+      transform: translateY(-2px);
+    }
+
+    .progress {
+      text-align: center;
+      color: #555;
+      margin-top: 1.2rem;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Ôn Từ Vựng</h1>
+
+  <div id="upload-area">
+    <p style="margin-bottom: 1.2rem; font-size: 1.1rem;">
+      Chọn file Excel (.xlsx)<br>
+      <small>(dữ liệu sẽ chỉ đọc ngay trên máy, không upload)</small>
+    </p>
+    <input type="file" id="excelInput" accept=".xlsx,.xls" />
+    <br><br>
+    <button onclick="loadExcelFile()">Bắt đầu ôn</button>
+  </div>
+
+  <div id="quiz-area">
+    <div class="word" id="wordDisplay">—</div>
+
+    <div class="options" id="optionsContainer"></div>
+
+    <button id="next-btn">Tiếp theo →</button>
+
+    <div class="progress" id="progress">Còn lại: — câu</div>
+  </div>
+</div>
+
+<script>
+let questions = [];
+let queue = [];
+let current = null;
+let answered = false;
+
+const wordEl = document.getElementById('wordDisplay');
+const optionsContainer = document.getElementById('optionsContainer');
+const nextBtn = document.getElementById('next-btn');
+const progressEl = document.getElementById('progress');
+
+function loadExcelFile() {
+  const file = document.getElementById('excelInput').files[0];
+  if (!file) return alert('Vui lòng chọn file Excel trước!');
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type: 'array'});
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+
+      questions = rows
+        .slice(1) // bỏ header
+        .filter(r => r[2] && r[0] && r[1])
+        .map(r => ({
+          word: String(r[2]).trim(),
+          a: String(r[0]).trim(),
+          b: String(r[1]).trim()
+        }));
+
+      if (questions.length === 0) {
+        alert('Không tìm thấy dữ liệu hợp lệ trong file');
+        return;
+      }
+
+      // Chuẩn bị hàng đợi
+      queue = [...questions];
+      shuffle(queue);
+
+      document.getElementById('upload-area').style.display = 'none';
+      document.getElementById('quiz-area').style.display = 'block';
+
+      nextQuestion();
+    } catch (err) {
+      alert('Có lỗi khi đọc file Excel:\n' + err.message);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+function nextQuestion() {
+  if (queue.length === 0) {
+    wordEl.textContent = "Hoàn thành!";
+    optionsContainer.innerHTML = '<p style="text-align:center; font-size:1.3rem; color:#4361ee; margin:2rem 0;">Bạn đã ôn xong toàn bộ từ vựng!</p>';
+    nextBtn.style.display = 'none';
+    progressEl.textContent = '';
+    return;
+  }
+
+  current = queue.shift();
+  answered = false;
+  nextBtn.style.display = 'none';
+
+  wordEl.textContent = current.word;
+
+  // Chuẩn bị 4 đáp án
+  let choices = [current];
+  while (choices.length < 4) {
+    const rand = questions[Math.floor(Math.random() * questions.length)];
+    if (!choices.some(c => c.a === rand.a && c.b === rand.b)) {
+      choices.push(rand);
+    }
+  }
+  shuffle(choices);
+
+  // Render
+  optionsContainer.innerHTML = '';
+  choices.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.innerHTML = `
+      <div class="meaning-pair">
+        <span>${item.a}</span>
+        <span>${item.b}</span>
+      </div>
+    `;
+
+    div.onclick = () => {
+      if (answered) return;
+      answered = true;
+
+      // Đánh dấu đúng/sai
+      const isCorrect = item.a === current.a && item.b === current.b;
+
+      div.classList.add('selected', isCorrect ? 'correct' : 'wrong');
+
+      // Highlight đáp án đúng
+      if (!isCorrect) {
+        [...optionsContainer.children].forEach(child => {
+          const spans = child.querySelectorAll('span');
+          if (spans[0].textContent === current.a && spans[1].textContent === current.b) {
+            child.classList.add('selected', 'correct');
+          }
+        });
+
+        // Đưa câu khó về cuối + thêm khoảng cách
+        queue.push(current);
+        if (queue.length > 5) {
+          const temp = queue.shift();
+          queue.push(temp);
+        }
+      }
+
+      nextBtn.style.display = 'block';
+      updateProgress();
+    };
+
+    optionsContainer.appendChild(div);
+  });
+
+  updateProgress();
+}
+
+function updateProgress() {
+  progressEl.textContent = `Còn lại: ${queue.length} câu`;
+}
+
+nextBtn.onclick = nextQuestion;
+</script>
+</body>
+</html>

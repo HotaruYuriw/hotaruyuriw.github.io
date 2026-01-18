@@ -3,16 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Ôn Từ Vựng - Flashcard Quiz</title>
+  <title>Ôn Từ Vựng - Modern Quiz</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   
   <style>
     :root {
-      --primary: #4361ee;
-      --correct: #4cc9f0;
-      --wrong: #f72585;
-      --bg: #f8f9fa;
-      --card: white;
+      --bg: #1a1b26;
+      --surface: #24283b;
+      --accent: #7aa2f7;
+      --text: #a9b1d6;
+      --subtext: #565f89;
+      --correct: #9ece6a;
+      --wrong: #f7768e;
+      --shadow: rgba(0,0,0,0.4);
     }
 
     * {
@@ -22,46 +25,63 @@
     }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: #333;
+      font-family: 'JetBrains Mono', monospace; /* Modern, like Arch/Hyprland terminals */
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
-      padding: 20px;
       display: flex;
       justify-content: center;
       align-items: center;
+      padding: 20px;
     }
 
     .container {
-      background: var(--card);
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-      padding: 2.5rem;
+      background: var(--surface);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px var(--shadow);
+      padding: 2rem;
       width: 100%;
-      max-width: 580px;
-      transition: transform 0.3s;
+      max-width: 800px;
+      transition: all 0.3s ease;
     }
 
     h1 {
       text-align: center;
-      color: var(--primary);
-      margin-bottom: 1.8rem;
-      font-size: 2.1rem;
-      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 1.5rem;
+      font-size: 1.8rem;
+      text-shadow: 0 2px 4px var(--shadow);
     }
 
-    #upload-area {
+    #setup-area {
       text-align: center;
-      padding: 2rem 1rem;
-      border: 3px dashed #aaa;
-      border-radius: 12px;
-      background: #f8f9fa;
+    }
+
+    #language-select {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--subtext);
+      border-radius: 6px;
+      padding: 0.8rem;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      cursor: pointer;
+    }
+
+    #start-btn {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 6px;
+      padding: 0.8rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
       transition: all 0.3s;
     }
 
-    #upload-area:hover {
-      border-color: var(--primary);
-      background: #eef2ff;
+    #start-btn:hover {
+      background: #5a7ec7;
+      transform: scale(1.05);
     }
 
     #quiz-area {
@@ -69,107 +89,120 @@
     }
 
     .word {
-      font-size: 2.4rem;
+      font-size: 2rem;
       font-weight: bold;
       text-align: center;
-      margin: 1.5rem 0 2.5rem;
-      color: #222;
-      padding: 0.8rem;
-      background: #f0f4ff;
-      border-radius: 12px;
+      margin: 1rem 0 2rem;
+      padding: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      box-shadow: inset 0 2px 8px var(--shadow);
     }
 
     .options {
       display: grid;
-      gap: 14px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
       margin: 1.5rem 0;
     }
 
     .option {
-      padding: 18px 24px;
-      background: #ffffff;
-      border: 2px solid #ddd;
-      border-radius: 12px;
+      padding: 1.2rem;
+      background: var(--surface);
+      border: 1px solid var(--subtext);
+      border-radius: 8px;
       cursor: pointer;
-      transition: all 0.25s ease;
-      font-size: 1.1rem;
-      line-height: 1.4;
+      transition: all 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+      min-height: 120px;
     }
 
     .option:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 15px rgba(67,97,238,0.2);
-      border-color: var(--primary);
+      border-color: var(--accent);
+      transform: translateY(-4px);
+      box-shadow: 0 4px 16px var(--shadow);
     }
 
     .option.selected.correct {
-      background: rgba(76,201,240,0.15);
+      background: rgba(158,206,106,0.2);
       border-color: var(--correct);
-      box-shadow: 0 0 0 4px rgba(76,201,240,0.2);
+      box-shadow: 0 0 0 3px rgba(158,206,106,0.3);
     }
 
     .option.selected.wrong {
-      background: rgba(247,37,133,0.12);
+      background: rgba(247,118,142,0.2);
       border-color: var(--wrong);
+      box-shadow: 0 0 0 3px rgba(247,118,142,0.3);
     }
 
     .meaning-pair {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 0.4rem;
     }
 
     .meaning-pair span:first-child {
-      font-weight: 600;
-      color: #2b2d42;
+      font-weight: bold;
+      color: var(--text);
     }
 
     .meaning-pair span:last-child {
-      color: #555;
-      font-size: 0.95rem;
+      color: var(--subtext);
+      font-size: 0.9rem;
     }
 
     #next-btn {
       width: 100%;
-      padding: 16px;
-      margin-top: 1.5rem;
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: white;
-      background: var(--primary);
+      padding: 1rem;
+      margin-top: 1rem;
+      font-size: 1.1rem;
+      color: var(--bg);
+      background: var(--accent);
       border: none;
-      border-radius: 12px;
+      border-radius: 6px;
       cursor: pointer;
       transition: all 0.3s;
       display: none;
     }
 
     #next-btn:hover {
-      background: #3f37c9;
-      transform: translateY(-2px);
+      background: #5a7ec7;
+      transform: scale(1.02);
     }
 
     .progress {
       text-align: center;
-      color: #555;
-      margin-top: 1.2rem;
-      font-size: 0.95rem;
+      color: var(--subtext);
+      margin-top: 1rem;
+      font-size: 0.9rem;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.5s ease;
     }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>Ôn Từ Vựng</h1>
+  <h1>Ôn Từ Vựng Modern</h1>
 
-  <div id="upload-area">
-    <p style="margin-bottom: 1.2rem; font-size: 1.1rem;">
-      Chọn file Excel (.xlsx)<br>
-      <small>(dữ liệu sẽ chỉ đọc ngay trên máy, không upload)</small>
-    </p>
-    <input type="file" id="excelInput" accept=".xlsx,.xls" />
-    <br><br>
-    <button onclick="loadExcelFile()">Bắt đầu ôn</button>
+  <div id="setup-area">
+    <p style="margin-bottom: 1rem; color: var(--subtext);">Chọn ngôn ngữ (file phải ở cùng thư mục với trang web này, ví dụ: vocab_vi.xlsx)</p>
+    <select id="language-select">
+      <option value="vi">Tiếng Việt (vocab_vi.xlsx)</option>
+      <option value="en">Tiếng Anh (vocab_en.xlsx)</option>
+      <!-- Thêm các ngôn ngữ khác nếu cần -->
+    </select>
+    <button id="start-btn" onclick="loadFile()">Bắt đầu ôn</button>
   </div>
 
   <div id="quiz-area">
@@ -194,45 +227,42 @@ const optionsContainer = document.getElementById('optionsContainer');
 const nextBtn = document.getElementById('next-btn');
 const progressEl = document.getElementById('progress');
 
-function loadExcelFile() {
-  const file = document.getElementById('excelInput').files[0];
-  if (!file) return alert('Vui lòng chọn file Excel trước!');
+async function loadFile() {
+  const lang = document.getElementById('language-select').value;
+  const fileName = `vocab_${lang}.xlsx`;
 
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      const data = new Uint8Array(e.target.result);
-      const workbook = XLSX.read(data, {type: 'array'});
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+  try {
+    const response = await fetch(fileName);
+    if (!response.ok) throw new Error('Không tìm thấy file');
+    const arrayBuffer = await response.arrayBuffer();
+    const workbook = XLSX.read(arrayBuffer, {type: 'array'});
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
 
-      questions = rows
-        .slice(1) // bỏ header
-        .filter(r => r[2] && r[0] && r[1])
-        .map(r => ({
-          word: String(r[2]).trim(),
-          a: String(r[0]).trim(),
-          b: String(r[1]).trim()
-        }));
+    questions = rows
+      .slice(1)
+      .filter(r => r[2] && r[0] && r[1])
+      .map(r => ({
+        word: String(r[2]).trim(),
+        a: String(r[0]).trim(),
+        b: String(r[1]).trim()
+      }));
 
-      if (questions.length === 0) {
-        alert('Không tìm thấy dữ liệu hợp lệ trong file');
-        return;
-      }
-
-      // Chuẩn bị hàng đợi
-      queue = [...questions];
-      shuffle(queue);
-
-      document.getElementById('upload-area').style.display = 'none';
-      document.getElementById('quiz-area').style.display = 'block';
-
-      nextQuestion();
-    } catch (err) {
-      alert('Có lỗi khi đọc file Excel:\n' + err.message);
+    if (questions.length === 0) {
+      alert('Không tìm thấy dữ liệu hợp lệ trong file');
+      return;
     }
-  };
-  reader.readAsArrayBuffer(file);
+
+    queue = [...questions];
+    shuffle(queue);
+
+    document.getElementById('setup-area').style.display = 'none';
+    document.getElementById('quiz-area').style.display = 'block';
+
+    nextQuestion();
+  } catch (err) {
+    alert('Lỗi tải file: ' + err.message + '\nĐảm bảo file "' + fileName + '" ở cùng thư mục và mở trang web cục bộ.');
+  }
 }
 
 function shuffle(array) {
@@ -245,7 +275,7 @@ function shuffle(array) {
 function nextQuestion() {
   if (queue.length === 0) {
     wordEl.textContent = "Hoàn thành!";
-    optionsContainer.innerHTML = '<p style="text-align:center; font-size:1.3rem; color:#4361ee; margin:2rem 0;">Bạn đã ôn xong toàn bộ từ vựng!</p>';
+    optionsContainer.innerHTML = '<p style="text-align:center; font-size:1.3rem; color:var(--accent); margin:2rem 0;">Bạn đã ôn xong toàn bộ từ vựng!</p>';
     nextBtn.style.display = 'none';
     progressEl.textContent = '';
     return;
@@ -254,10 +284,10 @@ function nextQuestion() {
   current = queue.shift();
   answered = false;
   nextBtn.style.display = 'none';
+  optionsContainer.classList.add('fade-in');
 
   wordEl.textContent = current.word;
 
-  // Chuẩn bị 4 đáp án
   let choices = [current];
   while (choices.length < 4) {
     const rand = questions[Math.floor(Math.random() * questions.length)];
@@ -267,7 +297,6 @@ function nextQuestion() {
   }
   shuffle(choices);
 
-  // Render
   optionsContainer.innerHTML = '';
   choices.forEach(item => {
     const div = document.createElement('div');
@@ -283,12 +312,10 @@ function nextQuestion() {
       if (answered) return;
       answered = true;
 
-      // Đánh dấu đúng/sai
       const isCorrect = item.a === current.a && item.b === current.b;
 
       div.classList.add('selected', isCorrect ? 'correct' : 'wrong');
 
-      // Highlight đáp án đúng
       if (!isCorrect) {
         [...optionsContainer.children].forEach(child => {
           const spans = child.querySelectorAll('span');
@@ -297,15 +324,17 @@ function nextQuestion() {
           }
         });
 
-        // Đưa câu khó về cuối + thêm khoảng cách
         queue.push(current);
         if (queue.length > 5) {
           const temp = queue.shift();
           queue.push(temp);
         }
+
+        nextBtn.style.display = 'block';
+      } else {
+        setTimeout(nextQuestion, 800); // Auto next if correct
       }
 
-      nextBtn.style.display = 'block';
       updateProgress();
     };
 

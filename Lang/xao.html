@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ôn Từ Vựng - Xáo Ký Tự + Dấu / + Nghĩa</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  
+  <style>
+    :root {
+      --bg: #16161e;
+      --surface: #1e1e2e;
+      --accent: #89b4fa;
+      --text: #cdd6f4;
+      --subtext: #6c7086;
+      --correct: #a6e3a1;
+      --wrong: #f38ba8;
+      --shadow: rgba(0,0,0,0.6);
+    }
+
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .container {
+      background: var(--surface);
+      border-radius: 16px;
+      box-shadow: 0 10px 40px var(--shadow);
+      padding: 2rem;
+      width: 100%;
+      max-width: 860px;
+    }
+
+    h1 { text-align: center; color: var(--accent); margin-bottom: 1.8rem; font-size: 2.3rem; }
+
+    #setup-area { text-align: center; }
+    .setup-text { color: var(--subtext); margin-bottom: 1.5rem; font-size: 1.1rem; }
+
+    input[type="file"] {
+      width: 100%;
+      max-width: 420px;
+      padding: 1rem;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px dashed var(--accent);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .mode-selector {
+      display: flex;
+      gap: 1rem;
+      margin: 1.8rem 0;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .mode-btn {
+      padding: 0.8rem 1.6rem;
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid var(--subtext);
+      border-radius: 10px;
+      cursor: pointer;
+    }
+
+    .mode-btn.active {
+      background: var(--accent);
+      color: var(--bg);
+      border-color: var(--accent);
+    }
+
+    #start-btn {
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      padding: 1rem 2.5rem;
+      border-radius: 12px;
+      font-size: 1.15rem;
+      cursor: pointer;
+    }
+
+    #quiz-area { display: none; }
+
+    .question {
+      font-size: 2.6rem;
+      font-weight: bold;
+      text-align: center;
+      margin: 2rem 0 1rem;
+      letter-spacing: 0.4rem;
+      line-height: 1.6;
+    }
+
+    .meaning {
+      font-size: 1.5rem;
+      color: var(--correct);
+      text-align: center;
+      margin-bottom: 1.5rem;
+      min-height: 2.2rem;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+
+    .meaning.show { opacity: 1; }
+
+    .options {
+      display: grid;
+      gap: 1.4rem;
+      margin: 1.5rem 0;
+    }
+
+    .option {
+      padding: 1.6rem;
+      background: var(--surface);
+      border: 2px solid var(--subtext);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.35s;
+      font-size: 3.2rem;
+      font-weight: bold;
+      letter-spacing: 1.2rem;
+      text-align: center;
+      min-height: 130px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .option:hover { border-color: var(--accent); transform: translateY(-5px); }
+
+    .option.selected.correct {
+      background: rgba(166,227,161,0.2);
+      border-color: var(--correct);
+    }
+
+    .option.selected.wrong {
+      background: rgba(243,139,168,0.2);
+      border-color: var(--wrong);
+    }
+
+    #next-btn {
+      width: 100%;
+      padding: 1.2rem;
+      background: var(--accent);
+      color: var(--bg);
+      border: none;
+      border-radius: 10px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: none;
+    }
+
+    .progress {
+      text-align: center;
+      color: var(--subtext);
+      margin-top: 1.2rem;
+      font-size: 1.1rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🔀 Xáo Ký Tự + Dấu / + Nghĩa</h1>
+
+  <div id="setup-area">
+    <p class="setup-text">File Excel 2 cột: Cột 1 = Từ tiếng Trung, Cột 2 = Nghĩa tiếng Việt</p>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" />
+    
+    <div class="mode-selector">
+      <button class="mode-btn active" data-mode="slash_shuffle">🔀 Xáo có dấu /</button>
+      <button class="mode-btn" data-mode="timed">⏱️ Xáo + Thời gian</button>
+    </div>
+    
+    <button id="start-btn" disabled>Bắt đầu ôn</button>
+  </div>
+
+  <div id="quiz-area">
+    <div class="question" id="questionDisplay">—</div>
+    <div class="meaning" id="meaningDisplay"></div>
+    <div class="options" id="optionsContainer"></div>
+    <button id="next-btn">Tiếp theo →</button>
+    <div class="progress" id="progress">Còn lại: — câu</div>
+  </div>
+</div>
+
+<script>
+let questions = [];
+let queue = [];
+let current = null;
+let answered = false;
+let mode = 'slash_shuffle';
+let timeLimit = 15;
+let timerInterval = null;
+
+const questionEl = document.getElementById('questionDisplay');
+const meaningEl = document.getElementById('meaningDisplay');
+const optionsContainer = document.getElementById('optionsContainer');
+const nextBtn = document.getElementById('next-btn');
+const progressEl = document.getElementById('progress');
+const fileInput = document.getElementById('fileInput');
+const startBtn = document.getElementById('start-btn');
+
+let stats = { correct: 0, wrong: 0, total: 0 };
+
+fileInput.addEventListener('change', () => {
+  startBtn.disabled = !fileInput.files.length;
+});
+
+startBtn.addEventListener('click', loadFile);
+
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    mode = btn.dataset.mode;
+  });
+});
+
+function loadFile() {
+  const file = fileInput.files[0];
+  if (!file) return;
+
+  startBtn.textContent = 'Đang tải...';
+  startBtn.disabled = true;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const workbook = XLSX.read(e.target.result, {type: 'array'});
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
+
+      questions = rows
+        .slice(1)
+        .filter(r => r[0] && String(r[0]).trim())
+        .map(r => ({
+          word: String(r[0]).trim(),
+          meaning: r[1] ? String(r[1]).trim() : '(chưa có nghĩa)'
+        }));
+
+      if (questions.length === 0) {
+        alert('Không tìm thấy dữ liệu hợp lệ!\nCần ít nhất cột 1: từ Trung Quốc');
+        resetStartButton();
+        return;
+      }
+
+      queue = [...questions];
+      shuffle(queue);
+
+      document.getElementById('setup-area').style.display = 'none';
+      document.getElementById('quiz-area').style.display = 'block';
+
+      nextQuestion();
+    } catch (err) {
+      alert('Lỗi đọc file: ' + err.message);
+      resetStartButton();
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resetStartButton() {
+  startBtn.textContent = 'Bắt đầu ôn';
+  startBtn.disabled = false;
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function nextQuestion() {
+  if (timerInterval) clearInterval(timerInterval);
+  meaningEl.classList.remove('show');
+  meaningEl.textContent = '';
+
+  if (queue.length === 0) {
+    questionEl.textContent = "Hoàn thành!";
+    optionsContainer.innerHTML = `<div style="text-align:center; font-size:2.4rem; color:var(--correct); padding:2rem;">
+      🎉 Xong!<br>Đúng: \( {stats.correct} / \){stats.total}
+    </div>`;
+    nextBtn.style.display = 'none';
+    progressEl.textContent = '';
+    return;
+  }
+
+  current = queue.shift();
+  answered = false;
+  nextBtn.style.display = 'none';
+
+  // Đề bài: xáo ký tự + dấu /
+  const chars = current.word.split('');
+  shuffle(chars);
+  questionEl.textContent = chars.join(' / ');
+
+  // Tạo 4 đáp án
+  let choices = [current.word];
+  while (choices.length < 4) {
+    const shuffled = [...chars];
+    shuffle(shuffled);
+    const wrong = shuffled.join('');
+    if (!choices.includes(wrong)) choices.push(wrong);
+  }
+  shuffle(choices);
+
+  optionsContainer.innerHTML = '';
+
+  choices.forEach(word => {
+    const div = document.createElement('div');
+    div.className = 'option';
+    div.textContent = word;
+
+    div.addEventListener('click', () => handleAnswer(div, word === current.word));
+    optionsContainer.appendChild(div);
+  });
+
+  progressEl.textContent = `Còn lại: ${queue.length} câu`;
+
+  if (mode === 'timed') {
+    let timeLeft = timeLimit;
+    progressEl.textContent += ` | ⏱️ ${timeLeft}s`;
+
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      progressEl.textContent = `Còn lại: \( {queue.length} câu | ⏱️ \){timeLeft}s`;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        if (!answered) handleTimeout();
+      }
+    }, 1000);
+  }
+}
+
+function handleAnswer(div, isCorrect) {
+  if (answered) return;
+  if (timerInterval) clearInterval(timerInterval);
+  answered = true;
+
+  stats.total++;
+
+  // Luôn hiện nghĩa đúng khi trả lời
+  meaningEl.textContent = current.meaning;
+  meaningEl.classList.add('show');
+
+  if (isCorrect) {
+    stats.correct++;
+    div.classList.add('selected', 'correct');
+    setTimeout(nextQuestion, 1400); // chờ lâu hơn một chút để đọc nghĩa
+  } else {
+    stats.wrong++;
+    div.classList.add('selected', 'wrong');
+    
+    [...optionsContainer.children].forEach(child => {
+      if (child.textContent === current.word) {
+        child.classList.add('selected', 'correct');
+      }
+    });
+
+    queue.push(current);
+    nextBtn.style.display = 'block';
+  }
+
+  progressEl.textContent = `Còn lại: ${queue.length} câu`;
+}
+
+function handleTimeout() {
+  answered = true;
+  stats.wrong++;
+  stats.total++;
+
+  meaningEl.textContent = current.meaning;
+  meaningEl.classList.add('show');
+
+  [...optionsContainer.children].forEach(child => {
+    if (child.textContent === current.word) {
+      child.classList.add('selected', 'correct');
+    }
+  });
+
+  queue.push(current);
+  nextBtn.style.display = 'block';
+  progressEl.textContent = `Còn lại: ${queue.length} câu`;
+}
+
+nextBtn.addEventListener('click', nextQuestion);
+</script>
+</body>
+</html>

@@ -539,14 +539,15 @@ function loadSelectedFile() {
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, {header: 1});
 
-      // Parse data: [Nghĩa 1, Nghĩa 2, Từ Trung]
+      // Parse data: [Nghĩa 1, Nghĩa 2, Từ Trung] - Chia nhóm mỗi 100 dòng
       questions = rows
         .slice(1)
         .filter(r => r[2] && r[0] && String(r[2]).trim())
-        .map(r => ({
+        .map((r, index) => ({
           word: String(r[2]).trim(),
           a: String(r[0]).trim(),
-          b: r[1] ? String(r[1]).trim() : ""
+          b: r[1] ? String(r[1]).trim() : "",
+          group: Math.floor(index / 100) // Chia nhóm mỗi 100 dòng
         }));
 
       if (questions.length === 0) {
@@ -665,16 +666,29 @@ function nextQuestion() {
 
   wordEl.textContent = current.word;
 
-  // Generate choices based on mode
+  // Generate choices based on mode - chỉ lấy đáp án từ cùng nhóm
   const numChoices = mode === 'hard' ? 6 : 4;
   let choices = [current];
   
+  // Lấy tất cả câu hỏi trong cùng nhóm
+  const sameGroupQuestions = questions.filter(q => q.group === current.group);
+  
+  // Ưu tiên lấy đáp án từ cùng nhóm
+  while (choices.length < numChoices && sameGroupQuestions.length >= numChoices) {
+    const rand = sameGroupQuestions[Math.floor(Math.random() * sameGroupQuestions.length)];
+    if (!choices.some(c => c.word === rand.word)) {
+      choices.push(rand);
+    }
+  }
+  
+  // Nếu nhóm không đủ câu, lấy thêm từ toàn bộ
   while (choices.length < numChoices) {
     const rand = questions[Math.floor(Math.random() * questions.length)];
     if (!choices.some(c => c.word === rand.word)) {
       choices.push(rand);
     }
   }
+  
   shuffle(choices);
 
   optionsContainer.innerHTML = '';
